@@ -354,6 +354,25 @@ body {
   background-color: white;
 }
 
+.message.streaming .message-content {
+  position: relative;
+}
+
+.message.streaming .message-content::after {
+  content: '▊';
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
 .input-container {
   padding: 24px;
   background-color: white;

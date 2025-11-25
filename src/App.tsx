@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import { supabase, type Conversation, type Message } from './lib/supabase'
-import { createChatCompletion, formatMessagesForAPI, type ToolExecution } from './lib/chat'
+import { createStreamingChatCompletion, formatMessagesForAPI, type ToolExecution } from './lib/chat'
 
 function App() {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -11,6 +11,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([])
+  const [streamingContent, setStreamingContent] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -146,13 +147,20 @@ function App() {
     }
 
     setMessages(prev => [...prev, thinkingData])
+    setStreamingContent('')
 
     try {
       const apiMessages = formatMessagesForAPI(currentMessages)
 
-      const response = await createChatCompletion(apiMessages, (execution) => {
-        setToolExecutions(prev => [...prev, execution])
-      })
+      const response = await createStreamingChatCompletion(
+        apiMessages,
+        (chunk) => {
+          setStreamingContent(prev => prev + chunk)
+        },
+        (execution) => {
+          setToolExecutions(prev => [...prev, execution])
+        }
+      )
 
       await supabase
         .from('messages')
@@ -204,6 +212,7 @@ function App() {
     } finally {
       setIsLoading(false)
       setToolExecutions([])
+      setStreamingContent('')
     }
   }
 
@@ -347,7 +356,17 @@ function App() {
                   </div>
                 </div>
               ))}
-              {toolExecutions.length > 0 && (
+              {streamingContent && (
+                <div className="message assistant streaming">
+                  <div className="message-header">
+                    <span className="message-role">Kimi</span>
+                  </div>
+                  <div className="message-content">
+                    {streamingContent}
+                  </div>
+                </div>
+              )}
+              {toolExecutions.length > 0 && !streamingContent && (
                 <div className="message assistant">
                   <div className="message-header">
                     <span className="message-role">Kimi</span>
