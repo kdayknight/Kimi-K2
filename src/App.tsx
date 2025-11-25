@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import { supabase, type Conversation, type Message } from './lib/supabase'
+import { createChatCompletion, formatMessagesForAPI, type ToolExecution } from './lib/chat'
 
 function App() {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -9,6 +10,7 @@ function App() {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -113,63 +115,96 @@ function App() {
       return
     }
 
-    setMessages([...messages, userMsgData])
+    const currentMessages = [...messages, userMsgData]
+    setMessages(currentMessages)
     setInputValue('')
     setIsLoading(true)
+    setToolExecutions([])
 
     await supabase
       .from('conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId)
 
-    setTimeout(async () => {
-      const thinkingMessage = {
+    const thinkingMessage = {
+      conversation_id: conversationId!,
+      role: 'assistant' as const,
+      content: 'Thinking...',
+      is_thinking: true,
+      metadata: {}
+    }
+
+    const { data: thinkingData, error: thinkingError } = await supabase
+      .from('messages')
+      .insert([thinkingMessage])
+      .select()
+      .single()
+
+    if (thinkingError) {
+      setIsLoading(false)
+      return
+    }
+
+    setMessages(prev => [...prev, thinkingData])
+
+    try {
+      const apiMessages = formatMessagesForAPI(currentMessages)
+
+      const response = await createChatCompletion(apiMessages, (execution) => {
+        setToolExecutions(prev => [...prev, execution])
+      })
+
+      await supabase
+        .from('messages')
+        .delete()
+        .eq('id', thinkingData.id)
+
+      const assistantMessage = {
         conversation_id: conversationId!,
         role: 'assistant' as const,
-        content: 'Thinking...',
-        is_thinking: true,
-        metadata: {}
+        content: response,
+        is_thinking: false,
+        metadata: { tool_executions: toolExecutions }
       }
 
-      const { data: thinkingData, error: thinkingError } = await supabase
+      const { data: assistantData, error: assistantError } = await supabase
         .from('messages')
-        .insert([thinkingMessage])
+        .insert([assistantMessage])
         .select()
         .single()
 
-      if (!thinkingError && thinkingData) {
-        setMessages(prev => [...prev, thinkingData])
-
-        setTimeout(async () => {
-          await supabase
-            .from('messages')
-            .delete()
-            .eq('id', thinkingData.id)
-
-          const assistantMessage = {
-            conversation_id: conversationId!,
-            role: 'assistant' as const,
-            content: `I received your message: "${userMessage.content}". This is a demo response. In a real application, this would connect to an AI service to generate responses, create slides, or generate images based on your request.`,
-            is_thinking: false,
-            metadata: {}
-          }
-
-          const { data: assistantData, error: assistantError } = await supabase
-            .from('messages')
-            .insert([assistantMessage])
-            .select()
-            .single()
-
-          if (!assistantError && assistantData) {
-            setMessages(prev => prev.filter(m => m.id !== thinkingData.id).concat(assistantData))
-          }
-
-          setIsLoading(false)
-        }, 1500)
-      } else {
-        setIsLoading(false)
+      if (!assistantError && assistantData) {
+        setMessages(prev => prev.filter(m => m.id !== thinkingData.id).concat(assistantData))
       }
-    }, 500)
+    } catch (error) {
+      console.error('Error in chat completion:', error)
+
+      await supabase
+        .from('messages')
+        .delete()
+        .eq('id', thinkingData.id)
+
+      const errorMessage = {
+        conversation_id: conversationId!,
+        role: 'assistant' as const,
+        content: 'I apologize, but I encountered an error. Please make sure your Kimi API key is configured correctly.',
+        is_thinking: false,
+        metadata: {}
+      }
+
+      const { data: errorData } = await supabase
+        .from('messages')
+        .insert([errorMessage])
+        .select()
+        .single()
+
+      if (errorData) {
+        setMessages(prev => prev.filter(m => m.id !== thinkingData.id).concat(errorData))
+      }
+    } finally {
+      setIsLoading(false)
+      setToolExecutions([])
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -294,11 +329,42 @@ function App() {
                         <span className="thinking-dot"></span>
                       </div>
                     ) : (
-                      message.content
+                      <>
+                        {message.content}
+                        {message.metadata?.tool_executions && Array.isArray(message.metadata.tool_executions) && message.metadata.tool_executions.length > 0 && (
+                          <div className="tool-executions">
+                            <div className="tool-executions-title">Tools Used:</div>
+                            {message.metadata.tool_executions.map((exec: ToolExecution, idx: number) => (
+                              <div key={idx} className="tool-execution">
+                                <span className="tool-name">{exec.name}</span>
+                                <span className="tool-args">{JSON.stringify(exec.arguments)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
               ))}
+              {toolExecutions.length > 0 && (
+                <div className="message assistant">
+                  <div className="message-header">
+                    <span className="message-role">Kimi</span>
+                  </div>
+                  <div className="message-content">
+                    <div className="tool-executions-live">
+                      <div className="tool-executions-title">Executing Tools...</div>
+                      {toolExecutions.map((exec, idx) => (
+                        <div key={idx} className="tool-execution">
+                          <span className="tool-name">{exec.name}</span>
+                          <span className="tool-args">{JSON.stringify(exec.arguments)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
           )}
