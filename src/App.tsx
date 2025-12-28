@@ -236,7 +236,7 @@ function App() {
       const errorMessage = {
         conversation_id: conversationId!,
         role: 'assistant' as const,
-        content: error instanceof Error ? `Error: ${error.message}` : 'I apologize, but I encountered an error. Please check the console for details.',
+        content: 'I apologize, but I encountered an error. Please make sure your Kimi API key is configured correctly.',
         is_thinking: false,
         metadata: {}
       }
