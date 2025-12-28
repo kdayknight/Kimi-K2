@@ -348,14 +348,7 @@ function App() {
                   disabled={isLoading}
                   rows={1}
                 />
-                <div className="input-toolbar">
-                  <button className="model-selector">
-                    <span>🔍</span>
-                    <span>Researcher</span>
-                  </button>
-                </div>
                 <div className="input-actions">
-                  <button className="input-btn" title="K2 Model">K2 ▼</button>
                   {currentConversation && (
                     <FileUpload
                       conversationId={currentConversation}
@@ -373,7 +366,6 @@ function App() {
                       🎨
                     </button>
                   )}
-                  <button className="input-btn" title="Settings">⚙️</button>
                   <button
                     className="input-btn send-btn"
                     onClick={sendMessage}
@@ -467,14 +459,7 @@ function App() {
                 disabled={isLoading}
                 rows={1}
               />
-              <div className="input-toolbar">
-                <button className="model-selector">
-                  <span>🔍</span>
-                  <span>Researcher</span>
-                </button>
-              </div>
               <div className="input-actions">
-                <button className="input-btn" title="K2 Model">K2 ▼</button>
                 {currentConversation && (
                   <FileUpload
                     conversationId={currentConversation}
@@ -492,7 +477,6 @@ function App() {
                     🎨
                   </button>
                 )}
-                <button className="input-btn" title="Settings">⚙️</button>
                 <button
                   className="input-btn send-btn"
                   onClick={sendMessage}
