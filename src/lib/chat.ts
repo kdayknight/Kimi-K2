@@ -88,7 +88,8 @@ export const createChatCompletion = async (
     return 'I apologize, but I was unable to generate a response.'
   } catch (error) {
     console.error('Error in chat completion:', error)
-    return 'I apologize, but I encountered an error. This is a demo mode. Please configure your Kimi API key in the .env file to enable real AI responses.'
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return `I apologize, but I encountered an error: ${errorMessage}. Please check the console for more details.`
   }
 }
 
@@ -215,7 +216,8 @@ export const createStreamingChatCompletion = async (
     return fullMessage
   } catch (error) {
     console.error('Error in streaming chat completion:', error)
-    return 'I apologize, but I encountered an error. This is a demo mode. Please configure your Kimi API key in the .env file to enable real AI responses.'
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return `I apologize, but I encountered an error: ${errorMessage}. Please check the console for more details.`
   }
 }
 
