@@ -1,4 +1,4 @@
-import { KIMI_MODEL } from './kimi'
+import { kimiClient, KIMI_MODEL } from './kimi'
 import { tools, toolMap } from './tools'
 import type { Message } from './supabase'
 
@@ -23,26 +23,6 @@ export interface ToolExecution {
   result: any
 }
 
-const callKimiAPI = async (body: any) => {
-  const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kimi-chat`
-
-  const response = await fetch(edgeFunctionUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`API request failed: ${errorText}`)
-  }
-
-  return response
-}
-
 export const createChatCompletion = async (
   messages: ChatMessage[],
   onToolExecution?: (execution: ToolExecution) => void
@@ -59,17 +39,15 @@ export const createChatCompletion = async (
     let currentMessages = [...chatMessages]
 
     while (finishReason === null || finishReason === 'tool_calls') {
-      const response = await callKimiAPI({
+      const completion = await kimiClient.chat.completions.create({
         model: KIMI_MODEL,
-        messages: currentMessages,
+        messages: currentMessages as any,
         temperature: 0.6,
-        tools: tools,
+        tools: tools as any,
         tool_choice: 'auto',
-        use_search: true,
-        stream: false
-      })
+        use_search: true
+      } as any)
 
-      const completion = await response.json()
       const choice = completion.choices[0]
       finishReason = choice.finish_reason
 
@@ -133,22 +111,16 @@ export const createStreamingChatCompletion = async (
     let fullMessage = ''
 
     while (finishReason === null || finishReason === 'tool_calls') {
-      const response = await callKimiAPI({
+      const stream: any = await kimiClient.chat.completions.create({
         model: KIMI_MODEL,
-        messages: currentMessages,
+        messages: currentMessages as any,
         temperature: 0.6,
-        tools: tools,
+        tools: tools as any,
         tool_choice: 'auto',
         stream: true,
         use_search: true
-      })
+      } as any)
 
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error('Failed to get response reader')
-      }
-
-      const decoder = new TextDecoder()
       const toolCalls: Array<{
         id: string
         type: 'function'
@@ -159,67 +131,48 @@ export const createStreamingChatCompletion = async (
       }> = []
 
       let msg = ''
-      let buffer = ''
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0].delta
 
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
+        if (delta.content) {
+          msg += delta.content
+          fullMessage += delta.content
+          if (onChunk) {
+            onChunk(delta.content)
+          }
+        }
 
-        for (const line of lines) {
-          if (!line.trim() || line.trim() === 'data: [DONE]') continue
-
-          if (line.startsWith('data: ')) {
-            try {
-              const chunk = JSON.parse(line.slice(6))
-              const delta = chunk.choices[0].delta
-
-              if (delta.content) {
-                msg += delta.content
-                fullMessage += delta.content
-                if (onChunk) {
-                  onChunk(delta.content)
-                }
-              }
-
-              if (delta.tool_calls) {
-                for (const toolCallChunk of delta.tool_calls) {
-                  if (toolCallChunk.index !== undefined) {
-                    while (toolCalls.length <= toolCallChunk.index) {
-                      toolCalls.push({
-                        id: '',
-                        type: 'function',
-                        function: {
-                          name: '',
-                          arguments: ''
-                        }
-                      })
-                    }
-
-                    const tc = toolCalls[toolCallChunk.index]
-
-                    if (toolCallChunk.id) {
-                      tc.id += toolCallChunk.id
-                    }
-                    if (toolCallChunk.function?.name) {
-                      tc.function.name += toolCallChunk.function.name
-                    }
-                    if (toolCallChunk.function?.arguments) {
-                      tc.function.arguments += toolCallChunk.function.arguments
-                    }
+        if (delta.tool_calls) {
+          for (const toolCallChunk of delta.tool_calls) {
+            if (toolCallChunk.index !== undefined) {
+              while (toolCalls.length <= toolCallChunk.index) {
+                toolCalls.push({
+                  id: '',
+                  type: 'function',
+                  function: {
+                    name: '',
+                    arguments: ''
                   }
-                }
+                })
               }
 
-              finishReason = chunk.choices[0].finish_reason
-            } catch (e) {
-              console.error('Error parsing stream chunk:', e)
+              const tc = toolCalls[toolCallChunk.index]
+
+              if (toolCallChunk.id) {
+                tc.id += toolCallChunk.id
+              }
+              if (toolCallChunk.function?.name) {
+                tc.function.name += toolCallChunk.function.name
+              }
+              if (toolCallChunk.function?.arguments) {
+                tc.function.arguments += toolCallChunk.function.arguments
+              }
             }
           }
         }
+
+        finishReason = chunk.choices[0].finish_reason
       }
 
       if (finishReason === 'tool_calls' && toolCalls.length > 0) {
