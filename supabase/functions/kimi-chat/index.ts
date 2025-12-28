@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,7 +16,7 @@ interface ChatRequest {
   use_search?: boolean
 }
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
