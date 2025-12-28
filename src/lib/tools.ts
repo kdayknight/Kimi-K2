@@ -23,26 +23,85 @@ export const getWeather = (city: string): { weather: string; temperature: number
   }
 }
 
-export const createSlides = (topic: string, slideCount: number): { slides: Array<{ title: string; content: string }> } => {
-  const slides = []
-  for (let i = 1; i <= Math.min(slideCount, 10); i++) {
-    slides.push({
-      title: `${topic} - Slide ${i}`,
-      content: `This is the content for slide ${i} about ${topic}. It includes key points and information relevant to the topic.`
-    })
+export const createSlides = async (
+  topic: string,
+  slideCount: number,
+  conversationId: string,
+  presentationId?: string
+): Promise<{ presentation_id: string; slides: Array<{ id: string; title: string; content: any; slide_order: number }> }> => {
+  const { supabase } = await import('./supabase');
+
+  let presId: string = presentationId || '';
+
+  if (!presId) {
+    const { data: presentation, error: presError } = await supabase
+      .from('presentations')
+      .insert({
+        conversation_id: conversationId,
+        title: `${topic} Presentation`,
+      })
+      .select()
+      .single();
+
+    if (presError) throw presError;
+    presId = presentation?.id || '';
   }
 
-  return { slides }
+  const slides = [];
+  for (let i = 0; i < Math.min(slideCount, 15); i++) {
+    const slideData = {
+      presentation_id: presId,
+      slide_order: i,
+      title: i === 0 ? topic : `${topic} - Key Point ${i}`,
+      content: {
+        bullets: i === 0 ? [] : [
+          `Important insight ${i}.1`,
+          `Key finding ${i}.2`,
+          `Critical consideration ${i}.3`
+        ],
+        text: i === 0 ? `A comprehensive presentation about ${topic}` : ''
+      },
+      layout_type: i === 0 ? 'title-slide' : 'title-content',
+      image_url: ''
+    };
+
+    const { data: slide, error } = await supabase
+      .from('slides')
+      .insert(slideData)
+      .select()
+      .single();
+
+    if (error) throw error;
+    slides.push(slide);
+  }
+
+  return { presentation_id: presId, slides };
 }
 
-export const generateImage = (prompt: string, style?: string): { imageUrl: string; prompt: string; style: string } => {
-  const styles = ['realistic', 'artistic', 'cartoon', 'abstract']
-  const selectedStyle = style || styles[Math.floor(Math.random() * styles.length)]
+export const generateSlideImage = async (prompt: string, slideId?: string): Promise<{ imageUrl: string; prompt: string }> => {
+  const { generateImage } = await import('./fal');
 
-  return {
-    imageUrl: `https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=800`,
-    prompt,
-    style: selectedStyle
+  try {
+    const imageUrl = await generateImage(prompt);
+
+    if (slideId) {
+      const { supabase } = await import('./supabase');
+      await supabase
+        .from('slides')
+        .update({ image_url: imageUrl, updated_at: new Date().toISOString() })
+        .eq('id', slideId);
+    }
+
+    return {
+      imageUrl,
+      prompt
+    };
+  } catch (error) {
+    console.error('Error generating image:', error);
+    return {
+      imageUrl: 'https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=2048',
+      prompt
+    };
   }
 }
 
@@ -90,10 +149,10 @@ export const tools: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'create_slides',
-      description: 'Generate presentation slides on a given topic. Use this when the user wants to create a presentation or slides.',
+      description: 'Generate presentation slides on a given topic. Use this when the user wants to create a presentation or slides. This will create slides in the database.',
       parameters: {
         type: 'object',
-        required: ['topic', 'slide_count'],
+        required: ['topic', 'slide_count', 'conversation_id'],
         properties: {
           topic: {
             type: 'string',
@@ -101,7 +160,15 @@ export const tools: ToolDefinition[] = [
           },
           slide_count: {
             type: 'number',
-            description: 'Number of slides to generate (max 10)'
+            description: 'Number of slides to generate (max 15)'
+          },
+          conversation_id: {
+            type: 'string',
+            description: 'ID of the current conversation'
+          },
+          presentation_id: {
+            type: 'string',
+            description: 'Optional ID of existing presentation to add slides to'
           }
         }
       }
@@ -110,19 +177,19 @@ export const tools: ToolDefinition[] = [
   {
     type: 'function',
     function: {
-      name: 'generate_image',
-      description: 'Generate or find an image based on a text description. Use this when the user wants to create or see an image.',
+      name: 'generate_slide_image',
+      description: 'Generate a 2K resolution image for a slide using AI (Nano Banana Pro). Use this when creating visual content for presentations.',
       parameters: {
         type: 'object',
         required: ['prompt'],
         properties: {
           prompt: {
             type: 'string',
-            description: 'Description of the image to generate'
+            description: 'Description of the image to generate for the slide'
           },
-          style: {
+          slide_id: {
             type: 'string',
-            description: 'Style of the image (realistic, artistic, cartoon, abstract)'
+            description: 'Optional ID of the slide to attach the image to'
           }
         }
       }
@@ -149,7 +216,9 @@ export const tools: ToolDefinition[] = [
 
 export const toolMap: Record<string, (args: any) => any> = {
   get_weather: (args: { city: string }) => getWeather(args.city),
-  create_slides: (args: { topic: string; slide_count: number }) => createSlides(args.topic, args.slide_count),
-  generate_image: (args: { prompt: string; style?: string }) => generateImage(args.prompt, args.style),
+  create_slides: (args: { topic: string; slide_count: number; conversation_id: string; presentation_id?: string }) =>
+    createSlides(args.topic, args.slide_count, args.conversation_id, args.presentation_id),
+  generate_slide_image: (args: { prompt: string; slide_id?: string }) =>
+    generateSlideImage(args.prompt, args.slide_id),
   search_web: (args: { query: string }) => searchWeb(args.query)
 }

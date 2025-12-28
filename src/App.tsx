@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import { supabase, type Conversation, type Message } from './lib/supabase'
 import { createStreamingChatCompletion, formatMessagesForAPI, type ToolExecution } from './lib/chat'
+import { FileUpload } from './components/FileUpload'
+import { SlideEditor } from './components/SlideEditor'
 
 function App() {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -12,6 +14,9 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([])
   const [streamingContent, setStreamingContent] = useState('')
+  const [showSlideEditor, setShowSlideEditor] = useState(false)
+  const [currentPresentationId, setCurrentPresentationId] = useState<string | null>(null)
+  const [, setUploadedFiles] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -22,6 +27,8 @@ function App() {
   useEffect(() => {
     if (currentConversation) {
       loadMessages(currentConversation)
+      loadPresentations(currentConversation)
+      loadUploadedFiles(currentConversation)
     }
   }, [currentConversation])
 
@@ -56,6 +63,40 @@ function App() {
     }
 
     setMessages(data || [])
+  }
+
+  const loadPresentations = async (conversationId: string) => {
+    const { data, error } = await supabase
+      .from('presentations')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error loading presentations:', error)
+      return
+    }
+
+    if (data && data.length > 0) {
+      setCurrentPresentationId(data[0].id)
+    } else {
+      setCurrentPresentationId(null)
+    }
+  }
+
+  const loadUploadedFiles = async (conversationId: string) => {
+    const { data, error } = await supabase
+      .from('uploaded_files')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error loading uploaded files:', error)
+      return
+    }
+
+    setUploadedFiles(data || [])
   }
 
   const createNewConversation = async () => {
@@ -315,7 +356,23 @@ function App() {
                 </div>
                 <div className="input-actions">
                   <button className="input-btn" title="K2 Model">K2 ▼</button>
-                  <button className="input-btn" title="Attach file">📎</button>
+                  {currentConversation && (
+                    <FileUpload
+                      conversationId={currentConversation}
+                      onFileUploaded={(file) => {
+                        setUploadedFiles(prev => [file, ...prev])
+                      }}
+                    />
+                  )}
+                  {currentPresentationId && (
+                    <button
+                      className="input-btn"
+                      onClick={() => setShowSlideEditor(!showSlideEditor)}
+                      title="Toggle Slide Editor"
+                    >
+                      🎨
+                    </button>
+                  )}
                   <button className="input-btn" title="Settings">⚙️</button>
                   <button
                     className="input-btn send-btn"
@@ -418,7 +475,23 @@ function App() {
               </div>
               <div className="input-actions">
                 <button className="input-btn" title="K2 Model">K2 ▼</button>
-                <button className="input-btn" title="Attach file">📎</button>
+                {currentConversation && (
+                  <FileUpload
+                    conversationId={currentConversation}
+                    onFileUploaded={(file) => {
+                      setUploadedFiles(prev => [file, ...prev])
+                    }}
+                  />
+                )}
+                {currentPresentationId && (
+                  <button
+                    className="input-btn"
+                    onClick={() => setShowSlideEditor(!showSlideEditor)}
+                    title="Toggle Slide Editor"
+                  >
+                    🎨
+                  </button>
+                )}
                 <button className="input-btn" title="Settings">⚙️</button>
                 <button
                   className="input-btn send-btn"
@@ -433,6 +506,16 @@ function App() {
           </div>
         )}
       </main>
+
+      {showSlideEditor && currentPresentationId && (
+        <aside className="slide-editor-panel">
+          <div className="slide-editor-header">
+            <h2>Slide Editor</h2>
+            <button onClick={() => setShowSlideEditor(false)} className="close-btn">×</button>
+          </div>
+          <SlideEditor presentationId={currentPresentationId} />
+        </aside>
+      )}
     </div>
   )
 }

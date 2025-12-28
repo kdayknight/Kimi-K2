@@ -548,3 +548,340 @@ body {
     font-size: 14px;
   }
 }
+
+.file-upload {
+  display: inline-block;
+}
+
+.file-upload-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.file-upload-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
+}
+
+.file-upload-error {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background-color: #ff4444;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 1000;
+}
+
+.slide-editor-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 600px;
+  background-color: var(--bg-primary);
+  border-left: 1px solid var(--border-dark);
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.slide-editor-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-dark);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slide-editor-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 28px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
+}
+
+.slide-editor {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.slide-editor-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+.slide-navigator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+}
+
+.slide-navigator button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border-dark);
+  background-color: var(--bg-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.slide-navigator button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.slide-navigator button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.slide-preview {
+  padding: 24px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.slide-preview h2 {
+  margin: 0 0 16px 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.slide-preview ul {
+  margin: 16px 0;
+  padding-left: 24px;
+}
+
+.slide-preview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.slide-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.slide-actions button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-dark);
+  background-color: var(--bg-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.slide-actions button:hover {
+  background-color: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.slide-edit-panel {
+  padding: 20px;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+}
+
+.slide-edit-panel h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.slide-title-input,
+.slide-content-input,
+.image-prompt-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  margin-bottom: 12px;
+  background-color: white;
+}
+
+.slide-content-input {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.image-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.image-controls button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-dark);
+  background-color: var(--accent);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.image-controls button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.image-controls button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.slide-preview-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.edit-actions button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-dark);
+  background-color: var(--accent);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.edit-actions button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.edit-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edit-actions button:last-child {
+  background-color: transparent;
+  color: var(--text-secondary);
+}
+
+.edit-actions button:last-child:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.slide-list {
+  margin-top: 24px;
+}
+
+.add-slide-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px dashed var(--border-dark);
+  background-color: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.add-slide-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.slide-thumbnails {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.slide-thumbnail {
+  padding: 16px;
+  border: 2px solid var(--border-dark);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: white;
+}
+
+.slide-thumbnail:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.slide-thumbnail.active {
+  border-color: var(--accent);
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.slide-number {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.slide-thumbnail-title {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

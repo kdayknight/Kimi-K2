@@ -29,7 +29,7 @@ export const createChatCompletion = async (
 ): Promise<string> => {
   const systemMessage: ChatMessage = {
     role: 'system',
-    content: 'You are Kimi, an AI assistant created by Moonshot AI. You are helpful, creative, and can use tools to assist users with various tasks including checking weather, creating slides, generating images, and searching the web.'
+    content: 'You are Pitch, an AI-powered presentation assistant. Your primary role is to help users create engaging, professional slide presentations. You can search the web for current information, generate slides with compelling content, create high-quality 2K images for slides using Nano Banana Pro, and analyze uploaded documents to extract insights for presentations. Always provide well-structured, visually-focused content suitable for slides.'
   }
 
   const chatMessages = [systemMessage, ...messages]
@@ -44,8 +44,9 @@ export const createChatCompletion = async (
         messages: currentMessages as any,
         temperature: 0.6,
         tools: tools as any,
-        tool_choice: 'auto'
-      })
+        tool_choice: 'auto',
+        use_search: true
+      } as any)
 
       const choice = completion.choices[0]
       finishReason = choice.finish_reason
@@ -61,7 +62,7 @@ export const createChatCompletion = async (
           const toolFunction = toolMap[toolName]
 
           if (toolFunction) {
-            const toolResult = toolFunction(toolArguments)
+            const toolResult = await Promise.resolve(toolFunction(toolArguments))
 
             if (onToolExecution) {
               onToolExecution({
@@ -98,7 +99,7 @@ export const createStreamingChatCompletion = async (
 ): Promise<string> => {
   const systemMessage: ChatMessage = {
     role: 'system',
-    content: 'You are Kimi, an AI assistant created by Moonshot AI. You are helpful, creative, and can use tools to assist users with various tasks including checking weather, creating slides, generating images, and searching the web.'
+    content: 'You are Pitch, an AI-powered presentation assistant. Your primary role is to help users create engaging, professional slide presentations. You can search the web for current information, generate slides with compelling content, create high-quality 2K images for slides using Nano Banana Pro, and analyze uploaded documents to extract insights for presentations. Always provide well-structured, visually-focused content suitable for slides.'
   }
 
   const chatMessages = [systemMessage, ...messages]
@@ -109,14 +110,15 @@ export const createStreamingChatCompletion = async (
     let fullMessage = ''
 
     while (finishReason === null || finishReason === 'tool_calls') {
-      const stream = await kimiClient.chat.completions.create({
+      const stream: any = await kimiClient.chat.completions.create({
         model: KIMI_MODEL,
         messages: currentMessages as any,
         temperature: 0.6,
         tools: tools as any,
         tool_choice: 'auto',
-        stream: true
-      })
+        stream: true,
+        use_search: true
+      } as any)
 
       const toolCalls: Array<{
         id: string
@@ -185,7 +187,7 @@ export const createStreamingChatCompletion = async (
           const toolFunction = toolMap[toolName]
 
           if (toolFunction) {
-            const toolResult = toolFunction(toolArguments)
+            const toolResult = await Promise.resolve(toolFunction(toolArguments))
 
             if (onToolExecution) {
               onToolExecution({
