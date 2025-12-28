@@ -232,9 +232,9 @@ function App() {
 
   return (
     <div className="app">
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
         <div className="sidebar-header">
-          <div className="logo">K</div>
+          <img src="/figures/pitch_icon_copy.png" alt="Pitch" className="logo" />
           <button className="sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
             {sidebarOpen ? '◀' : '▶'}
           </button>
@@ -242,43 +242,51 @@ function App() {
 
         <button className="new-chat-btn" onClick={createNewConversation}>
           <span>➕</span>
-          <span>New Chat</span>
-          <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--gray-500)' }}>⌘ K</span>
+          {sidebarOpen && (
+            <>
+              <span>New Chat</span>
+              <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)' }}>⌘ K</span>
+            </>
+          )}
         </button>
 
         <nav className="sidebar-nav">
-          <div className="nav-section">
-            <div className="nav-section-title">Kimi+</div>
-            <div className="nav-item">
-              <span className="nav-item-icon">📊</span>
-              <span>Kimi Slides</span>
-            </div>
-            <div className="nav-item">
-              <span className="nav-item-icon">💻</span>
-              <span>Kimi For Coding</span>
-            </div>
-          </div>
+          {sidebarOpen && (
+            <>
+              <div className="nav-section">
+                <div className="nav-section-title">Pitch+</div>
+                <div className="nav-item">
+                  <span className="nav-item-icon">📊</span>
+                  <span>Pitch Slides</span>
+                </div>
+                <div className="nav-item">
+                  <span className="nav-item-icon">💻</span>
+                  <span>Pitch For Coding</span>
+                </div>
+              </div>
 
-          <div className="nav-section">
-            <div className="nav-section-title">Chat History</div>
-            <ul className="chat-history-list">
-              {conversations.map((conv) => (
-                <li
-                  key={conv.id}
-                  className={`chat-history-item ${currentConversation === conv.id ? 'active' : ''}`}
-                  onClick={() => setCurrentConversation(conv.id)}
-                >
-                  {conv.title}
-                </li>
-              ))}
-            </ul>
-          </div>
+              <div className="nav-section">
+                <div className="nav-section-title">Chat History</div>
+                <ul className="chat-history-list">
+                  {conversations.map((conv) => (
+                    <li
+                      key={conv.id}
+                      className={`chat-history-item ${currentConversation === conv.id ? 'active' : ''}`}
+                      onClick={() => setCurrentConversation(conv.id)}
+                    >
+                      {conv.title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
         </nav>
 
         <div className="sidebar-footer">
           <div className="nav-item">
             <span style={{ fontSize: '20px' }}>👤</span>
-            <span>Log In</span>
+            {sidebarOpen && <span>Log In</span>}
           </div>
         </div>
       </aside>
@@ -287,7 +295,7 @@ function App() {
         <div className="chat-container">
           {messages.length === 0 ? (
             <div className="welcome-screen">
-              <h1 className="welcome-logo">KIMI</h1>
+              <img src="/figures/pitch_copy.png" alt="Pitch" className="welcome-logo-img" />
               <div className="input-wrapper">
                 <textarea
                   ref={textareaRef}
@@ -326,7 +334,7 @@ function App() {
                 <div key={message.id} className={`message ${message.role} ${message.is_thinking ? 'thinking' : ''}`}>
                   <div className="message-header">
                     <span className="message-role">
-                      {message.role === 'user' ? 'You' : 'Kimi'}
+                      {message.role === 'user' ? 'You' : 'Pitch'}
                     </span>
                   </div>
                   <div className="message-content">
@@ -359,7 +367,7 @@ function App() {
               {streamingContent && (
                 <div className="message assistant streaming">
                   <div className="message-header">
-                    <span className="message-role">Kimi</span>
+                    <span className="message-role">Pitch</span>
                   </div>
                   <div className="message-content">
                     {streamingContent}
@@ -369,7 +377,7 @@ function App() {
               {toolExecutions.length > 0 && !streamingContent && (
                 <div className="message assistant">
                   <div className="message-header">
-                    <span className="message-role">Kimi</span>
+                    <span className="message-role">Pitch</span>
                   </div>
                   <div className="message-content">
                     <div className="tool-executions-live">

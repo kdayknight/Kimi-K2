@@ -42,7 +42,11 @@ body {
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease;
+  transition: width 0.3s ease, transform 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 70px;
 }
 
 .sidebar-header {
@@ -54,16 +58,10 @@ body {
 }
 
 .logo {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--accent), #1a7f64);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  transition: all 0.2s;
 }
 
 .sidebar-toggle {
@@ -96,6 +94,11 @@ body {
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
+}
+
+.sidebar.collapsed .new-chat-btn {
+  justify-content: center;
+  padding: 12px;
 }
 
 .new-chat-btn:hover {
@@ -133,6 +136,10 @@ body {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
   transition: all 0.2s;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
 }
 
 .nav-item:hover {
@@ -216,6 +223,13 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 48px;
+}
+
+.welcome-logo-img {
+  width: 200px;
+  height: auto;
+  margin-bottom: 48px;
+  object-fit: contain;
 }
 
 .messages-container {
