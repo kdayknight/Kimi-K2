@@ -1,4 +1,4 @@
-import { kimiClient, KIMI_MODEL } from './kimi'
+import { KIMI_MODEL } from './kimi'
 import { tools, toolMap } from './tools'
 import type { Message } from './supabase'
 
@@ -23,6 +23,26 @@ export interface ToolExecution {
   result: any
 }
 
+const callKimiAPI = async (body: any) => {
+  const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kimi-chat`
+
+  const response = await fetch(edgeFunctionUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`API request failed: ${errorText}`)
+  }
+
+  return response
+}
+
 export const createChatCompletion = async (
   messages: ChatMessage[],
   onToolExecution?: (execution: ToolExecution) => void
@@ -39,15 +59,17 @@ export const createChatCompletion = async (
     let currentMessages = [...chatMessages]
 
     while (finishReason === null || finishReason === 'tool_calls') {
-      const completion = await kimiClient.chat.completions.create({
+      const response = await callKimiAPI({
         model: KIMI_MODEL,
-        messages: currentMessages as any,
+        messages: currentMessages,
         temperature: 0.6,
-        tools: tools as any,
+        tools: tools,
         tool_choice: 'auto',
-        use_search: true
-      } as any)
+        use_search: true,
+        stream: false
+      })
 
+      const completion = await response.json()
       const choice = completion.choices[0]
       finishReason = choice.finish_reason
 
@@ -88,7 +110,8 @@ export const createChatCompletion = async (
     return 'I apologize, but I was unable to generate a response.'
   } catch (error) {
     console.error('Error in chat completion:', error)
-    return 'I apologize, but I encountered an error. This is a demo mode. Please configure your Kimi API key in the .env file to enable real AI responses.'
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return `I apologize, but I encountered an error: ${errorMessage}. Please check the console for more details.`
   }
 }
 
@@ -110,16 +133,22 @@ export const createStreamingChatCompletion = async (
     let fullMessage = ''
 
     while (finishReason === null || finishReason === 'tool_calls') {
-      const stream: any = await kimiClient.chat.completions.create({
+      const response = await callKimiAPI({
         model: KIMI_MODEL,
-        messages: currentMessages as any,
+        messages: currentMessages,
         temperature: 0.6,
-        tools: tools as any,
+        tools: tools,
         tool_choice: 'auto',
         stream: true,
         use_search: true
-      } as any)
+      })
 
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('Failed to get response reader')
+      }
+
+      const decoder = new TextDecoder()
       const toolCalls: Array<{
         id: string
         type: 'function'
@@ -130,48 +159,67 @@ export const createStreamingChatCompletion = async (
       }> = []
 
       let msg = ''
+      let buffer = ''
 
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0].delta
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-        if (delta.content) {
-          msg += delta.content
-          fullMessage += delta.content
-          if (onChunk) {
-            onChunk(delta.content)
-          }
-        }
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
 
-        if (delta.tool_calls) {
-          for (const toolCallChunk of delta.tool_calls) {
-            if (toolCallChunk.index !== undefined) {
-              while (toolCalls.length <= toolCallChunk.index) {
-                toolCalls.push({
-                  id: '',
-                  type: 'function',
-                  function: {
-                    name: '',
-                    arguments: ''
+        for (const line of lines) {
+          if (!line.trim() || line.trim() === 'data: [DONE]') continue
+
+          if (line.startsWith('data: ')) {
+            try {
+              const chunk = JSON.parse(line.slice(6))
+              const delta = chunk.choices[0].delta
+
+              if (delta.content) {
+                msg += delta.content
+                fullMessage += delta.content
+                if (onChunk) {
+                  onChunk(delta.content)
+                }
+              }
+
+              if (delta.tool_calls) {
+                for (const toolCallChunk of delta.tool_calls) {
+                  if (toolCallChunk.index !== undefined) {
+                    while (toolCalls.length <= toolCallChunk.index) {
+                      toolCalls.push({
+                        id: '',
+                        type: 'function',
+                        function: {
+                          name: '',
+                          arguments: ''
+                        }
+                      })
+                    }
+
+                    const tc = toolCalls[toolCallChunk.index]
+
+                    if (toolCallChunk.id) {
+                      tc.id += toolCallChunk.id
+                    }
+                    if (toolCallChunk.function?.name) {
+                      tc.function.name += toolCallChunk.function.name
+                    }
+                    if (toolCallChunk.function?.arguments) {
+                      tc.function.arguments += toolCallChunk.function.arguments
+                    }
                   }
-                })
+                }
               }
 
-              const tc = toolCalls[toolCallChunk.index]
-
-              if (toolCallChunk.id) {
-                tc.id += toolCallChunk.id
-              }
-              if (toolCallChunk.function?.name) {
-                tc.function.name += toolCallChunk.function.name
-              }
-              if (toolCallChunk.function?.arguments) {
-                tc.function.arguments += toolCallChunk.function.arguments
-              }
+              finishReason = chunk.choices[0].finish_reason
+            } catch (e) {
+              console.error('Error parsing stream chunk:', e)
             }
           }
         }
-
-        finishReason = chunk.choices[0].finish_reason
       }
 
       if (finishReason === 'tool_calls' && toolCalls.length > 0) {
@@ -215,7 +263,8 @@ export const createStreamingChatCompletion = async (
     return fullMessage
   } catch (error) {
     console.error('Error in streaming chat completion:', error)
-    return 'I apologize, but I encountered an error. This is a demo mode. Please configure your Kimi API key in the .env file to enable real AI responses.'
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return `I apologize, but I encountered an error: ${errorMessage}. Please check the console for more details.`
   }
 }
 
