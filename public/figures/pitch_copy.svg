@@ -1,0 +1,8 @@
+<svg width="200" height="50" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="5" y="5" width="40" height="40" rx="10" fill="#10a37f"/>
+  <path d="M15 18C15 16.8954 15.8954 16 17 16H33C34.1046 16 35 16.8954 35 18V32C35 33.1046 34.1046 34 33 34H17C15.8954 34 15 33.1046 15 32V18Z" fill="white"/>
+  <rect x="18" y="21" width="14" height="2" rx="1" fill="#10a37f"/>
+  <rect x="18" y="26" width="10" height="2" rx="1" fill="#10a37f"/>
+  <rect x="18" y="31" width="12" height="2" rx="1" fill="#10a37f"/>
+  <text x="55" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="600" fill="#0d0d0d">Pitch</text>
+</svg>

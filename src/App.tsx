@@ -275,7 +275,7 @@ function App() {
     <div className="app">
       <aside className={`sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
         <div className="sidebar-header">
-          <img src="/figures/pitch_icon_copy.png" alt="Pitch" className="logo" />
+          <img src="/figures/pitch_icon_copy.svg" alt="Pitch" className="logo" />
           <button className="sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
             {sidebarOpen ? '◀' : '▶'}
           </button>
@@ -336,7 +336,7 @@ function App() {
         <div className="chat-container">
           {messages.length === 0 ? (
             <div className="welcome-screen">
-              <img src="/figures/pitch_copy.png" alt="Pitch" className="welcome-logo-img" />
+              <img src="/figures/pitch_copy.svg" alt="Pitch" className="welcome-logo-img" />
               <div className="input-wrapper">
                 <textarea
                   ref={textareaRef}
