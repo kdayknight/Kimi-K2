@@ -1,5 +1,3 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -16,7 +14,7 @@ interface ChatRequest {
   use_search?: boolean
 }
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
@@ -26,7 +24,7 @@ serve(async (req: Request) => {
 
   try {
     const kimiApiKey = Deno.env.get('KIMI_API_KEY')
-    const kimiBaseUrl = Deno.env.get('KIMI_BASE_URL') || 'https://api.moonshot.cn/v1'
+    const kimiBaseUrl = Deno.env.get('KIMI_BASE_URL') || 'https://api.moonshot.ai/v1'
 
     if (!kimiApiKey) {
       return new Response(
