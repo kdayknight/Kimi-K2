@@ -5,7 +5,7 @@ const baseURL = import.meta.env.VITE_KIMI_BASE_URL
 
 export const kimiClient = new OpenAI({
   apiKey: apiKey || 'demo_key',
-  baseURL: baseURL || 'https://api.moonshot.cn/v1',
+  baseURL: baseURL || 'https://api.moonshot.ai/v1',
   dangerouslyAllowBrowser: true
 })
 
